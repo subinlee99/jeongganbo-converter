@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jeongganbo to Western Notation Converter</title>
+</head>
+<body>
+    <h1>Jeongganbo → Western Music Notation Converter</h1>
+    <form action="/" method="post" enctype="multipart/form-data">
+        <input type="file" name="file">
+        <input type="submit" value="Convert">
+    </form>
+
+    {% if pdf_path %}
+        <h2>Converted Sheet Music</h2>
+        <iframe src="{{ pdf_path }}" width="100%" height="600px"></iframe>
+
+        <h3>Download PDF</h3>
+        <a href="{{ url_for('download_file', filename='output.pdf') }}" download>Download Sheet Music (PDF)</a>
+    {% endif %}
+
+    {% if midi_path %}
+        <h2>Play MIDI</h2>
+        <audio controls>
+            <source src="{{ midi_path }}" type="audio/midi">
+            Your browser does not support MIDI playback. <a href="{{ midi_path }}">Download MIDI</a>
+        </audio>
+
+        <h3>Download MIDI</h3>
+        <a href="{{ url_for('download_file', filename='output.mid') }}" download>Download MIDI</a>
+    {% endif %}
+</body>
+</html>
