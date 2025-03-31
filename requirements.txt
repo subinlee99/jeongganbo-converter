@@ -1,5 +1,6 @@
-Flask==3.0.3
-midiutil==1.2.1
-pydub==0.25.1
-matplotlib==3.8.4
+Flask
+midiutil
+pydub
 music21
+matplotlib
+gunicorn
