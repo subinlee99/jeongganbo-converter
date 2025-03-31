@@ -1,132 +1,104 @@
+from flask import Flask, render_template, request
+from midiutil import MIDIFile
+from pydub import AudioSegment
+from music21 import stream, note, metadata, environment
 import os
-import subprocess
-from flask import Flask, render_template, request, send_file, url_for
-from music21 import stream, note, converter
+import glob
 
 app = Flask(__name__)
-
-# 🔹 Directories for uploads and output
-UPLOAD_FOLDER = os.path.abspath("uploads")
-OUTPUT_FOLDER = os.path.abspath("static/output")
-
-app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
-
+UPLOAD_FOLDER = "uploads"
+OUTPUT_FOLDER = "static/output"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
-# 🔹 Mapping from Jeongganbo symbols to Western notation
-jeongganbo_to_western = {
-    "黃": "C4", "太": "D4", "仲": "E4",
-    "林": "F4", "南": "G4", "應": "A4",
-    "潢": "B4", "溝": "G3", "△": "rest", "-": "tie"
+# 정간보 음 → MIDI 음 매핑
+note_mapping = {
+    '黃': 60, '太': 62, '仲': 64, '林': 65,
+    '南': 67, '應': 69, '潢': 71, '溝': 72,
 }
 
-def convert_jeongganbo_to_musicxml_and_midi(filepath):
-    """Convert Jeongganbo text file to MusicXML and MIDI"""
-    with open(filepath, "r", encoding="utf-8") as file:
-        data = file.read()
+def jeongganbo_to_midi_and_score(text, midi_path, image_prefix):
+    midi = MIDIFile(1)
+    track, time = 0, 0
+    midi.addTrackName(track, time, "Jeongganbo")
+    midi.addTempo(track, time, 120)
 
-    western_notes = []
-    for char in data.split():
-        if char in jeongganbo_to_western:
-            western_notes.append(jeongganbo_to_western[char])
-        elif char.isalnum():
-            print(f"🚨 Invalid character detected: {char} (excluded from conversion)")
+    s = stream.Score()
+    p = stream.Part()
+    p.id = "Piano"
+    p.append(metadata.Metadata(title="Converted from Jeongganbo"))
 
-    s = stream.Stream()
-    for n in western_notes:
-        if n == "rest":
-            s.append(note.Rest(quarterLength=1))  # Rest as a quarter note
-        else:
-            new_note = note.Note(n)
-            new_note.quarterLength = 1  # All notes set as quarter notes
-            s.append(new_note)
+    duration = 1
+    volume = 100
+    channel = 0
+    note_found = False
 
-    musicxml_path = os.path.join(OUTPUT_FOLDER, "output.musicxml")
-    midi_path = os.path.join(OUTPUT_FOLDER, "output.mid")
+    for char in text:
+        if char in note_mapping:
+            pitch = note_mapping[char]
+            midi.addNote(track, channel, pitch, time, duration, volume)
+            n = note.Note(pitch)
+            n.quarterLength = 1
+            p.append(n)
+            time += duration
+            note_found = True
 
-    s.write('musicxml', fp=musicxml_path)
-    s.write('midi', fp=midi_path)
+    if not note_found:
+        return False, None
 
-    return musicxml_path, midi_path
+    s.append(p)
 
-def generate_sheet_music_pdf(musicxml_path):
-    """Use MuseScore 4 to convert MusicXML to PDF"""
-    output_pdf_path = os.path.join(OUTPUT_FOLDER, "output.pdf")
+    # MIDI 저장
+    with open(midi_path, 'wb') as f:
+        midi.writeFile(f)
 
-    # 🔍 Find the correct MuseScore path
-    musescore_paths = [
-        "/Applications/MuseScore 4.app/Contents/MacOS/mscore",
-        "/Applications/MuseScore 4.app/Contents/MacOS/MuseScore4"
-    ]
-    musescore_path = None
+    # Musescore 경로 지정 (macOS 기준)
+    env = environment.UserSettings()
+    env["musescoreDirectPNGPath"] = "/Applications/MuseScore 4.app/Contents/MacOS/mscore"
 
-    for path in musescore_paths:
-        if os.path.exists(path):
-            musescore_path = path
-            break
+    # 서양 악보 이미지 생성
+    s.write("musicxml.png", fp=image_prefix)
+    generated_images = sorted(
+        glob.glob(f"{image_prefix}*.png"), key=os.path.getmtime, reverse=True
+    )
+    return True, os.path.basename(generated_images[0]) if generated_images else None
 
-    if not musescore_path:
-        print("🚨 MuseScore executable not found.")
-        return None
-
-    try:
-        # 🚀 Set proper QT environment variables
-        env = os.environ.copy()
-        env["QT_QPA_PLATFORM"] = "cocoa"  # Use cocoa instead of offscreen
-        env["QT_QPA_PLATFORM_PLUGIN_PATH"] = "/Applications/MuseScore 4.app/Contents/PlugIns/platforms"
-
-        result = subprocess.run([musescore_path, "-o", output_pdf_path, musicxml_path], 
-                                env=env, capture_output=True, text=True, check=True)
-        print("✅ MuseScore Execution Output:", result.stdout)
-        print("🚨 MuseScore Error Messages:", result.stderr)
-    except subprocess.CalledProcessError as e:
-        print(f"🚨 MuseScore conversion failed (Error Code {e.returncode}): {e.stderr}")
-        return None
-    except Exception as e:
-        print(f"🚨 MuseScore execution error: {e}")
-        return None
-
-    if not os.path.exists(output_pdf_path):
-        print("🚨 MuseScore failed to generate a PDF file!")
-        return None
-
-    return output_pdf_path
+def midi_to_mp3(midi_path, mp3_path):
+    wav_path = midi_path.replace(".mid", ".wav")
+    os.system(f"timidity {midi_path} -Ow -o {wav_path}")
+    sound = AudioSegment.from_wav(wav_path)
+    sound.export(mp3_path, format="mp3")
+    os.remove(wav_path)
 
 @app.route("/", methods=["GET", "POST"])
 def index():
-    pdf_path, midi_path = None, None
     if request.method == "POST":
-        print("✅ POST request received")
-        if "file" not in request.files:
-            print("❌ No file uploaded")
-            return "No file uploaded.", 400
+        file = request.files.get("file")
+        if file and file.filename.endswith(".txt"):
+            filepath = os.path.join(UPLOAD_FOLDER, file.filename)
+            file.save(filepath)
 
-        file = request.files["file"]
-        if file.filename == "":
-            print("❌ No file selected")
-            return "No file selected.", 400
+            with open(filepath, 'r', encoding='utf-8') as f:
+                text = f.read()
 
-        filepath = os.path.join(app.config["UPLOAD_FOLDER"], file.filename)
-        file.save(filepath)
-        print(f"✅ File successfully saved: {filepath}")
+            midi_path = os.path.join(OUTPUT_FOLDER, "jeongganbo.mid")
+            mp3_path = os.path.join(OUTPUT_FOLDER, "jeongganbo.mp3")
+            image_prefix = os.path.join(OUTPUT_FOLDER, "score")
 
-        # Process Jeongganbo conversion
-        musicxml_path, midi_path = convert_jeongganbo_to_musicxml_and_midi(filepath)
-        pdf_path = generate_sheet_music_pdf(musicxml_path)
-
-        if not pdf_path:
-            return "Sheet music conversion failed (check MuseScore execution).", 500
-
-    return render_template("index.html", pdf_path=pdf_path, midi_path=midi_path)
-
-@app.route("/download/<filename>")
-def download_file(filename):
-    """Allow users to download generated files"""
-    file_path = os.path.join(OUTPUT_FOLDER, filename)
-    if os.path.exists(file_path):
-        return send_file(file_path, as_attachment=True)
-    return "File not found.", 404
+            success, image_file = jeongganbo_to_midi_and_score(text, midi_path, image_prefix)
+            if success:
+                midi_to_mp3(midi_path, mp3_path)
+                return render_template(
+                    "index.html",
+                    mp3_generated=True,
+                    image_path=f"output/{image_file}",
+                    jeongganbo_text=text
+                )
+            else:
+                return render_template("index.html", error="⚠ No valid Jeongganbo notes found.")
+        else:
+            return render_template("index.html", error="Please upload a .txt file.")
+    return render_template("index.html")
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(debug=True)
