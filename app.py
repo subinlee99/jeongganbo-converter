@@ -1,9 +1,12 @@
 from flask import Flask, render_template, request
 from midiutil import MIDIFile
 from pydub import AudioSegment
-from music21 import stream, note, metadata, environment
+from music21 import converter, instrument, metadata, environment
+import matplotlib
+matplotlib.use("Agg")  # for headless environments like Render
+import matplotlib.pyplot as plt
 import os
-import glob
+import platform
 
 app = Flask(__name__)
 UPLOAD_FOLDER = "uploads"
@@ -11,7 +14,7 @@ OUTPUT_FOLDER = "static/output"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
-# 정간보 음 → MIDI 음 매핑
+# Jeongganbo note to MIDI pitch mapping
 note_mapping = {
     '黃': 60, '太': 62, '仲': 64, '林': 65,
     '南': 67, '應': 69, '潢': 71, '溝': 72,
@@ -22,46 +25,48 @@ def jeongganbo_to_midi_and_score(text, midi_path, image_prefix):
     track, time = 0, 0
     midi.addTrackName(track, time, "Jeongganbo")
     midi.addTempo(track, time, 120)
-
-    s = stream.Score()
-    p = stream.Part()
-    p.id = "Piano"
-    p.append(metadata.Metadata(title="Converted from Jeongganbo"))
-
     duration = 1
     volume = 100
     channel = 0
-    note_found = False
 
+    notes = []
     for char in text:
         if char in note_mapping:
             pitch = note_mapping[char]
             midi.addNote(track, channel, pitch, time, duration, volume)
-            n = note.Note(pitch)
-            n.quarterLength = 1
-            p.append(n)
+            notes.append((char, pitch))
             time += duration
-            note_found = True
 
-    if not note_found:
+    if not notes:
         return False, None
 
-    s.append(p)
-
-    # MIDI 저장
+    # Save MIDI
     with open(midi_path, 'wb') as f:
         midi.writeFile(f)
 
-    # Musescore 경로 지정 (macOS 기준)
-    env = environment.UserSettings()
-    env["musescoreDirectPNGPath"] = "/Applications/MuseScore 4.app/Contents/MacOS/mscore"
+    # Generate score using music21
+    from music21 import stream, note
 
-    # 서양 악보 이미지 생성
-    s.write("musicxml.png", fp=image_prefix)
-    generated_images = sorted(
-        glob.glob(f"{image_prefix}*.png"), key=os.path.getmtime, reverse=True
-    )
-    return True, os.path.basename(generated_images[0]) if generated_images else None
+    score = stream.Score()
+    part = stream.Part()
+    part.insert(0, instrument.Piano())
+    score.insert(0, part)
+    for _, pitch in notes:
+        part.append(note.Note(pitch, quarterLength=1.0))
+
+    score.metadata = metadata.Metadata()
+    score.metadata.title = "Western Score"
+    score.metadata.composer = "Auto-generated"
+
+    # macOS만 MuseScore 경로 설정
+    if platform.system() == "Darwin":
+        env = environment.UserSettings()
+        env["musescoreDirectPNGPath"] = "/Applications/MuseScore 4.app/Contents/MacOS/mscore"
+
+    image_file = os.path.join(OUTPUT_FOLDER, "score.png")
+    score.write("musicxml.png", fp=image_file)
+
+    return True, "output/score.png"
 
 def midi_to_mp3(midi_path, mp3_path):
     wav_path = midi_path.replace(".mid", ".wav")
@@ -91,7 +96,7 @@ def index():
                 return render_template(
                     "index.html",
                     mp3_generated=True,
-                    image_path=f"output/{image_file}",
+                    image_path=image_file,
                     jeongganbo_text=text
                 )
             else:
@@ -100,8 +105,5 @@ def index():
             return render_template("index.html", error="Please upload a .txt file.")
     return render_template("index.html")
 
-import os
-
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host="0.0.0.0", port=port)
+    app.run(debug=True)
