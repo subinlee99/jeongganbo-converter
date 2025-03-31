@@ -104,6 +104,3 @@ def index():
         else:
             return render_template("index.html", error="Please upload a .txt file.")
     return render_template("index.html")
-
-if __name__ == "__main__":
-    app.run(debug=True)
