@@ -1,12 +1,12 @@
 from flask import Flask, render_template, request
 from midiutil import MIDIFile
 from pydub import AudioSegment
-from music21 import converter, instrument, metadata, environment
+from music21 import converter, instrument, metadata, environment, stream, note
 import matplotlib
-matplotlib.use("Agg")  # for headless environments like Render
-import matplotlib.pyplot as plt
+matplotlib.use("Agg")
 import os
 import platform
+
 
 app = Flask(__name__)
 UPLOAD_FOLDER = "uploads"
@@ -19,8 +19,12 @@ note_mapping = {
     '黃': 60, '太': 62, '仲': 64, '林': 65,
     '南': 67, '應': 69, '潢': 71, '溝': 72,
 }
+def image_to_jeongganbo_text(image_path):
+    img = Image.open(image_path)
+    text = pytesseract.image_to_string(img, lang='kor+eng')  # use Korean OCR if available
+    return text.strip()
 
-def jeongganbo_to_midi_and_score(text, midi_path, image_prefix):
+def jeongganbo_to_midi_and_score(text, midi_path):
     midi = MIDIFile(1)
     track, time = 0, 0
     midi.addTrackName(track, time, "Jeongganbo")
@@ -40,13 +44,10 @@ def jeongganbo_to_midi_and_score(text, midi_path, image_prefix):
     if not notes:
         return False, None
 
-    # Save MIDI
     with open(midi_path, 'wb') as f:
         midi.writeFile(f)
 
-    # Generate score using music21
-    from music21 import stream, note
-
+    # Create music21 score
     score = stream.Score()
     part = stream.Part()
     part.insert(0, instrument.Piano())
@@ -58,15 +59,16 @@ def jeongganbo_to_midi_and_score(text, midi_path, image_prefix):
     score.metadata.title = "Western Score"
     score.metadata.composer = "Auto-generated"
 
-    # macOS만 MuseScore 경로 설정
+    # MuseScore path (for macOS only)
     if platform.system() == "Darwin":
         env = environment.UserSettings()
         env["musescoreDirectPNGPath"] = "/Applications/MuseScore 4.app/Contents/MacOS/mscore"
 
-    image_file = os.path.join(OUTPUT_FOLDER, "score.png")
-    score.write("musicxml.png", fp=image_file)
+    image_output_path = os.path.join(OUTPUT_FOLDER, "score.png")
+    actual_image_path = score.write("musicxml.png", fp=image_output_path)
+    relative_image_path = os.path.relpath(actual_image_path, "static")
 
-    return True, "output/score.png"
+    return True, relative_image_path
 
 def midi_to_mp3(midi_path, mp3_path):
     wav_path = midi_path.replace(".mid", ".wav")
@@ -88,15 +90,14 @@ def index():
 
             midi_path = os.path.join(OUTPUT_FOLDER, "jeongganbo.mid")
             mp3_path = os.path.join(OUTPUT_FOLDER, "jeongganbo.mp3")
-            image_prefix = os.path.join(OUTPUT_FOLDER, "score")
 
-            success, image_file = jeongganbo_to_midi_and_score(text, midi_path, image_prefix)
+            success, image_path = jeongganbo_to_midi_and_score(text, midi_path)
             if success:
                 midi_to_mp3(midi_path, mp3_path)
                 return render_template(
                     "index.html",
                     mp3_generated=True,
-                    image_path=image_file,
+                    image_path=image_path,
                     jeongganbo_text=text
                 )
             else:
@@ -107,4 +108,4 @@ def index():
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=port, debug=True)
