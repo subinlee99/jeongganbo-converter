@@ -2,6 +2,10 @@
 
 A web app that converts traditional Korean Jeongganbo music notation into Western-style sheet music and playable audio.
 
+## 🎥 Demo Video
+
+👉 [Click here to watch the demo](https://drive.google.com/file/d/19a9ZdDMI1TJtYmuJwA4hTnAPQUrK9U-f/view?usp=sharing)
+
 ## ✅ Features
 
 - Upload Jeongganbo **text files (.txt)**
