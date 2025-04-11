@@ -6,6 +6,24 @@ A web app that converts traditional Korean Jeongganbo music notation into Wester
 
 👉 [Click here to watch the demo](https://drive.google.com/file/d/19a9ZdDMI1TJtYmuJwA4hTnAPQUrK9U-f/view?usp=sharing)
 
+### 📊 Diagram
+
+[Jeongganbo .txt Input]
+         ↓
+[Parser: Map to MIDI Notes]
+         ↓
+┌────────┴────────┐
+↓                 ↓
+[MIDI → MP3]     [Sheet Music (.png)]
+ (timidity +        (music21 + matplotlib)
+   pydub)
+         ↓                 ↓
+       [Web App Interface (Flask)]
+   → Audio Playback     → Sheet Music Preview
+   → Original + Converted Text Side-by-Side
+
+
+
 ## ✅ Features
 
 - Upload Jeongganbo **text files (.txt)**
