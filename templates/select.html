@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Select a Song - Gen-Gugak</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 2rem;
+      background-color: #fff;
+    }
+
+    h1 {
+      font-size: 2rem;
+    }
+
+    p {
+      margin-bottom: 2rem;
+    }
+
+    .grid {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+
+    .card {
+      border: 2px solid #ddd;
+      border-radius: 12px;
+      padding: 1rem;
+      width: 150px;
+      cursor: pointer;
+      transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .card:hover {
+      transform: scale(1.05);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.1);
+    }
+
+    .card.selected {
+      border-color: #333;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    }
+
+    .card img {
+      width: 100%;
+      height: 150px;
+      object-fit: cover;
+      border-radius: 10px;
+      background-color: #eee;
+    }
+
+    .card h4 {
+      margin: 0.5rem 0 0;
+    }
+
+    .card p {
+      margin: 0;
+      font-size: 0.9rem;
+      color: gray;
+    }
+
+    .button-container {
+      margin-top: 2rem;
+    }
+
+    .button-container a {
+      text-decoration: none;
+      padding: 12px 24px;
+      border: 2px solid #000;
+      border-radius: 30px;
+      font-size: 1rem;
+      opacity: 0.5;
+      pointer-events: none;
+      transition: all 0.2s ease-in-out;
+    }
+
+    .button-container a.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+  </style>
+</head>
+<body>
+  <h1>Gen-Gugak</h1>
+  <p>What song do you want to listen to?</p>
+
+  <div class="grid" id="cardGrid">
+    {% for song in playlist %}
+    <div class="card" onclick="selectSong(this, '{{ song.audio }}', '{{ song.sheet }}', '{{ song.album_cover }}', '{{ song.title }}', '{{ song.album_cover_gugak }}', '{{ song.audio_gugak }}')">
+      <img src="{{ song.album_cover }}" alt="cover">
+      <h4>{{ song.title }}</h4>
+      <p>Artist</p>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="button-container">
+    <a id="nextBtn" href="#">Next →</a>
+  </div>
+
+  <script>
+    function selectSong(cardElement, audio, sheet, cover, title, coverGugak, audio_gugak) {
+      document.querySelectorAll('.card').forEach(card => card.classList.remove('selected'));
+      cardElement.classList.add('selected');
+
+      const nextBtn = document.getElementById("nextBtn");
+      const query = `?audio=${encodeURIComponent(audio)}&sheet=${encodeURIComponent(sheet)}&cover=${encodeURIComponent(cover)}&title=${encodeURIComponent(title)}&album_cover_gugak=${encodeURIComponent(coverGugak)}&audio_gugak=${encodeURIComponent(audio_gugak)}`;
+      nextBtn.href = "/player" + query;
+      nextBtn.classList.add("active");
+    }
+  </script>
+</body>
+</html>

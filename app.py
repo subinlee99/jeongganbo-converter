@@ -6,7 +6,11 @@ import matplotlib
 matplotlib.use("Agg")
 import os
 import platform
+<<<<<<< HEAD
 
+=======
+#import openai
+>>>>>>> restore-branch
 
 app = Flask(__name__)
 UPLOAD_FOLDER = "uploads"
@@ -72,11 +76,23 @@ def jeongganbo_to_midi_and_score(text, midi_path):
 
 def midi_to_mp3(midi_path, mp3_path):
     wav_path = midi_path.replace(".mid", ".wav")
+<<<<<<< HEAD
     os.system(f"timidity {midi_path} -Ow -o {wav_path}")
+=======
+    result = os.system(f"timidity {midi_path} -Ow -o {wav_path}")
+
+    if not os.path.exists(wav_path):
+        raise FileNotFoundError("⚠️ Failed to convert MIDI to WAV. Is Timidity installed?")
+
+>>>>>>> restore-branch
     sound = AudioSegment.from_wav(wav_path)
     sound.export(mp3_path, format="mp3")
     os.remove(wav_path)
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> restore-branch
 @app.route("/", methods=["GET", "POST"])
 def index():
     if request.method == "POST":
@@ -105,7 +121,3 @@ def index():
         else:
             return render_template("index.html", error="Please upload a .txt file.")
     return render_template("index.html")
-
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=True)
