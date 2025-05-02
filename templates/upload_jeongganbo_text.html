@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Gugak Reader</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 60px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background-color: #fff;
+    }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: bold;
+      margin-bottom: 0.5rem;
+    }
+
+    p {
+      color: #555;
+      margin-bottom: 40px;
+    }
+
+    .upload-box {
+      border: 1px solid #ddd;
+      border-radius: 16px;
+      padding: 60px;
+      width: 400px;
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+
+    .file-label {
+      display: inline-block;
+      padding: 14px 24px;
+      border: 1px solid #ccc;
+      border-radius: 30px;
+      background-color: white;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+
+    .file-label:hover {
+      background-color: #000;
+      color: white;
+    }
+
+    .convert-btn {
+      padding: 12px 28px;
+      font-size: 1rem;
+      border: 2px solid black;
+      border-radius: 30px;
+      background-color: white;
+      cursor: pointer;
+    }
+
+    .convert-btn:hover {
+      background-color: black;
+      color: white;
+    }
+
+    .preview {
+      margin-top: 20px;
+    }
+
+    .error {
+      color: red;
+      margin-top: 10px;
+    }
+
+  </style>
+</head>
+<body>
+
+  <h1>Gugak Reader</h1>
+  <p>Convert Jeong-ganbo into Western sheet music.</p>
+
+  <form method="POST" enctype="multipart/form-data">
+    <div class="upload-box">
+      <label class="file-label">
+        📄 Upload Jeong-ganbo
+        <input type="file" name="file" accept=".txt">
+      </label>
+    </div>
+
+    <button class="convert-btn" type="submit">Convert →</button>
+  </form>
+
+  {% if image_path %}
+    <div class="preview">
+      <h3>Generated Western Sheet:</h3>
+      <img src="/static/{{ image_path }}" alt="Western Score" width="300">
+    </div>
+  {% endif %}
+
+  {% if error %}
+    <div class="error">{{ error }}</div>
+  {% endif %}
+
+{% if jeongganbo_text %}
+  <div class="preview">
+    <h4>Detected Notes:</h4>
+    <p>{{ jeongganbo_text }}</p>
+  </div>
+{% endif %}
+
+</body>
+</html>

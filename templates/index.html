@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Gen-Gugak</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 40px;
+      background-color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+    }
+
+    p.subtitle {
+      color: #444;
+      margin-top: 0;
+      margin-bottom: 30px;
+    }
+
+    .layout {
+      display: flex;
+      gap: 40px;
+      align-items: flex-start;
+    }
+
+    .card {
+      background-color: #f9f9f9;
+      border: 1px solid #ddd;
+      border-radius: 16px;
+      padding: 20px;
+      text-align: center;
+      width: 250px;
+    }
+
+    .card img {
+      width: 100%;
+      height: auto;
+      border-radius: 12px;
+      margin-bottom: 10px;
+    }
+
+    .card h4 {
+      margin: 0;
+      font-size: 1.1rem;
+    }
+
+    .card p {
+      margin: 4px 0 10px;
+      font-size: 0.9rem;
+      color: #666;
+    }
+
+    audio {
+      width: 100%;
+      margin-top: 10px;
+    }
+
+    .sheet {
+      flex: 1;
+      background-color: #f4f4f4;
+      border: 1px solid #ddd;
+      border-radius: 16px;
+      padding: 20px;
+      min-height: 300px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .sheet img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      border-radius: 8px;
+    }
+
+    .button-wrapper {
+      margin-top: 30px;
+    }
+
+    .gugak-btn {
+      font-size: 1rem;
+      padding: 10px 24px;
+      border: 2px solid black;
+      border-radius: 30px;
+      background-color: white;
+      cursor: pointer;
+    }
+
+    .gugak-btn:hover {
+      background-color: #000;
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Gen-Gugak</h1>
+  <p class="subtitle">We’ve generated the Western sheet music of this song.</p>
+
+  <div class="layout">
+    <!-- Left: Album Card -->
+    <div class="card">
+      <img src="{{ cover }}" alt="Album Cover">
+      <h4>{{ title }}</h4>
+      <p>Artist</p>
+      <audio controls autoplay>
+        <source src="{{ audio }}" type="audio/mp3">
+        Your browser does not support the audio element.
+      </audio>
+    </div>
+
+    <!-- Right: Sheet Display -->
+    <div class="sheet">
+      {% if sheet_image %}
+        <img src="/static/{{ sheet_image }}" alt="Sheet Music">
+      {% else %}
+        <p>No sheet music available.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Gugakify Button -->
+  <div class="button-wrapper">
+    <button class="gugak-btn" onclick="goToGugakify()">Gugak-ify 🎵</button>
+  </div>
+  <script>
+    function goToGugakify() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const sheet = urlParams.get('sheet');
+      const audio = urlParams.get('audio');
+      const cover = urlParams.get('cover');
+      const title = urlParams.get('title');
+      const album_cover_gugak = urlParams.get('album_cover_gugak');  // ✅ must be here
+      const audio_gugak = urlParams.get('audio_gugak');
+  
+      window.location.href =
+        `/gugakify?sheet=${encodeURIComponent(sheet)}&cover=${encodeURIComponent(cover)}&title=${encodeURIComponent(title)}&audio=${encodeURIComponent(audio)}&album_cover_gugak=${encodeURIComponent(album_cover_gugak)}&audio_gugak=${encodeURIComponent(audio_gugak)}`;
+    }
+  </script>
+  
+
+</body>
+</html>

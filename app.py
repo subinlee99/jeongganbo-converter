@@ -8,8 +8,6 @@ import os
 import platform
 #import openai
 
-#openai.api_key = os.getenv("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")  # Make sure to set your key in the environment
-
 app = Flask(__name__)
 UPLOAD_FOLDER = "uploads"
 OUTPUT_FOLDER = "static/output"
@@ -115,7 +113,6 @@ def index():
 
 
 from openai import OpenAI
-client = OpenAI(api_key="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")
 response = client.models.list()
 print("✅ OpenAI client is working!")
 @app.route("/convert_gugak", methods=["POST"])

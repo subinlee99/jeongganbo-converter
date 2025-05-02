@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Gugak-ified Version</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      height: 100vh;
+      background-color: #fff;
+    }
+
+    .sidebar {
+      width: 200px;
+      padding: 20px;
+      border-right: 1px solid #ccc;
+      background-color: #f8f8f8;
+    }
+
+    .sidebar h2 {
+      font-size: 1.2rem;
+      margin-bottom: 2rem;
+    }
+
+    .sidebar a {
+      display: block;
+      margin-bottom: 1rem;
+      text-decoration: none;
+      color: #333;
+    }
+
+    .main {
+      flex: 1;
+      padding: 30px;
+      display: flex;
+      gap: 30px;
+    }
+
+    .panel {
+      flex: 1;
+      border: 1px solid #ccc;
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .panel h3 {
+      font-size: 1.3rem;
+      margin-bottom: 10px;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 4px;
+    }
+
+    .card {
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      padding: 16px;
+      background-color: #fdfdfd;
+    }
+
+    .card.music-player {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .card.music-player .left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .card.music-player img {
+      width: 80px;
+      height: 80px;
+      border-radius: 10px;
+      object-fit: cover;
+    }
+
+    .card.music-player .metadata {
+      text-align: left;
+    }
+
+    .card.music-player .metadata h4 {
+      font-size: 1rem;
+      margin: 0;
+    }
+
+    .note {
+      padding: 4px 6px;
+      margin: 3px;
+      border-bottom: 1px dotted gray;
+      cursor: pointer;
+      display: inline-block;
+    }
+
+    .highlight {
+      background-color: yellow;
+    }
+
+    .jeongganbo-grid {
+      display: grid;
+      grid-auto-flow: column;
+      grid-template-rows: repeat(6, 50px);
+      gap: 4px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      background: #fff;
+      border-radius: 10px;
+      justify-content: start;
+      overflow-x: auto;
+    }
+
+    .cell {
+      width: 50px;
+      height: 50px;
+      border: 1px solid #aaa;
+      background-color: #fafafa;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 1.2rem;
+      font-family: 'Noto Serif KR', serif;
+    }
+    .highlight {
+  background-color: yellow !important;
+    }
+
+    .clicked {
+      background-color: yellow !important;
+    }
+
+  </style>
+</head>
+<body>
+
+  <div class="sidebar">
+    <h2>Gen-Gugak</h2>
+    <a href="/welcome">Home</a>
+    <a href="/select">Library</a>
+    <a href="/upload_jeongganbo_text">Gugak Reader</a>
+    <a href="/about">About</a>
+  </div>
+
+  <div class="main">
+    <div class="panel">
+      <h3>Original</h3>
+      <div class="card music-player">
+        <div class="left">
+          <img src="{{ cover }}" alt="Original Cover">
+          <div class="metadata">
+            <h4>{{ title }}</h4>
+          </div>
+        </div>
+        <audio controls autoplay style="flex: 1;">
+          <source src="{{ audio }}" type="audio/mp3">
+        </audio>
+      </div>
+      <div class="card">
+        <h4>Western Sheet Music</h4>
+        {% if svg_sheet %}
+          <object data="/static/{{ svg_sheet }}" type="image/svg+xml" width="100%" height="auto"></object>
+        {% else %}
+          <p>No SVG sheet music available.</p>
+        {% endif %}
+        
+        <h4>Western Notes</h4>
+        <div>
+          {% for pair in western_jeongganbo_pairs %}
+            <span class="note" data-index="{{ loop.index }}" data-jeongganbo="{{ pair.jeongganbo }}">{{ pair.western }}</span>
+          {% endfor %}
+        </div>
+        
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>Gugak</h3>
+      <div class="card music-player">
+        <div class="left">
+          <img src="{{ cover_gugak }}" alt="Gugak Cover">
+          <div class="metadata">
+            <h4>{{ title }} (Gugak Version)</h4>
+          </div>
+        </div>
+        {% if gugak_audio %}
+        <audio controls style="flex: 1;">
+          <source src="/static/{{ gugak_audio }}" type="audio/mp3">
+        </audio>
+        {% else %}
+        <p><em>No Gugak audio available.</em></p>
+        {% endif %}
+      </div>
+
+      <div class="card">
+        <h4>Jeong-ganbo</h4>
+        <div class="jeongganbo-grid">
+          {% for pair in western_jeongganbo_pairs %}
+            <div class="cell" id="jg-{{ loop.index }}">{{ pair.jeongganbo }}</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.querySelectorAll('.note').forEach((note) => {
+      const index = note.dataset.index;
+      const jgCell = document.getElementById(`jg-${index}`);
+  
+      note.addEventListener('mouseenter', () => {
+        if (jgCell) jgCell.classList.add('highlight');
+      });
+  
+      note.addEventListener('mouseleave', () => {
+        if (jgCell && !jgCell.classList.contains('clicked')) {
+          jgCell.classList.remove('highlight');
+        }
+      });
+  
+      note.addEventListener('click', () => {
+        document.querySelectorAll('.cell').forEach(cell => {
+          cell.classList.remove('highlight', 'clicked');
+        });
+        if (jgCell) {
+          jgCell.classList.add('highlight', 'clicked');
+        }
+      });
+    });
+  </script>
+  
+</body>
+</html>
