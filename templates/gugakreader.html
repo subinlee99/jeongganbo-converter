@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Gugak Reader</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #fff;
+      margin: 0;
+      padding: 40px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+    }
+
+    p {
+      color: #555;
+      margin-bottom: 2rem;
+    }
+
+    .upload-box {
+      border: 1.5px solid #ccc;
+      border-radius: 16px;
+      padding: 2rem;
+      width: 400px;
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .upload-box input[type=file] {
+      display: none;
+    }
+
+    .upload-label {
+      display: inline-block;
+      padding: 12px 24px;
+      border-radius: 30px;
+      border: 1px solid #000;
+      cursor: pointer;
+      font-size: 1rem;
+      margin-top: 1rem;
+    }
+
+    .convert-btn {
+      padding: 12px 24px;
+      font-size: 1rem;
+      border-radius: 30px;
+      background-color: black;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    .output {
+      margin-top: 3rem;
+      width: 100%;
+      max-width: 600px;
+      text-align: center;
+    }
+
+    .jeongganbo-text {
+      margin: 20px auto;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 1.5rem;
+      background: #f7f7f7;
+      width: fit-content;
+    }
+
+    .sheet-image {
+      width: 100%;
+      max-width: 600px;
+      margin-top: 20px;
+      border: 1px solid #ccc;
+      border-radius: 12px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Gugak Reader</h1>
+  <p>Convert Jeong-ganbo into Western sheet music.</p>
+
+  <form class="upload-box" method="POST" enctype="multipart/form-data">
+    <label for="file" class="upload-label">📄 Upload Jeong-ganbo</label>
+    <input type="file" name="file" id="file" accept=".txt">
+    <div style="margin-top: 2rem;">
+      <button class="convert-btn" type="submit">Convert →</button>
+    </div>
+  </form>
+
+  {% if jeongganbo_text %}
+    <div class="output">
+      <h3>Jeong-ganbo Notes</h3>
+      <div class="jeongganbo-text">{{ jeongganbo_text }}</div>
+    </div>
+  {% endif %}
+
+  {% if image_path %}
+    <div class="output">
+      <h3>Western Sheet Music</h3>
+      <img src="/static/{{ image_path }}" class="sheet-image" alt="Western Sheet Music">
+    </div>
+  {% endif %}
+
+  {% if error %}
+    <p style="color: red; margin-top: 2rem;">{{ error }}</p>
+  {% endif %}
+
+  <script>
+    const fileInput = document.getElementById('file');
+    const label = document.querySelector('.upload-label');
+    label.addEventListener('click', () => fileInput.click());
+  </script>
+</body>
+</html>

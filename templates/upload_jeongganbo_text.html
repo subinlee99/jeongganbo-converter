@@ -4,113 +4,279 @@
   <meta charset="UTF-8">
   <title>Gugak Reader</title>
   <style>
+    * { box-sizing: border-box; }
+
     body {
       font-family: Arial, sans-serif;
       margin: 0;
-      padding: 60px;
+      padding: 0;
+      display: flex;
+      height: 100vh;
+      background-color: #fff;
+    }
+
+    .sidebar {
+      width: 200px;
+      padding: 20px;
+      border-right: 1px solid #ccc;
+      background-color: #f8f8f8;
+    }
+
+    .sidebar h2 {
+      font-size: 1.2rem;
+      margin-bottom: 2rem;
+    }
+
+    .sidebar a {
+      display: block;
+      margin-bottom: 1rem;
+      text-decoration: none;
+      color: #333;
+    }
+
+    .main {
+      flex: 1;
+      padding: 40px;
       display: flex;
       flex-direction: column;
       align-items: center;
-      background-color: #fff;
     }
 
     h1 {
       font-size: 2rem;
-      font-weight: bold;
       margin-bottom: 0.5rem;
     }
 
     p {
       color: #555;
-      margin-bottom: 40px;
+      margin-bottom: 2rem;
     }
 
     .upload-box {
-      border: 1px solid #ddd;
+      border: 1.5px solid #ccc;
       border-radius: 16px;
-      padding: 60px;
+      padding: 2rem;
       width: 400px;
       text-align: center;
-      margin-bottom: 30px;
+      margin-bottom: 2rem;
     }
 
-    input[type="file"] {
+    .upload-box input[type=file] {
       display: none;
     }
 
-    .file-label {
+    .upload-label {
       display: inline-block;
-      padding: 14px 24px;
-      border: 1px solid #ccc;
+      padding: 12px 24px;
       border-radius: 30px;
-      background-color: white;
+      border: 1px solid #000;
       cursor: pointer;
       font-size: 1rem;
+      margin-top: 1rem;
     }
 
-    .file-label:hover {
-      background-color: #000;
-      color: white;
+    .file-name {
+      margin-top: 10px;
+      color: #333;
+      font-size: 0.9rem;
     }
 
     .convert-btn {
-      padding: 12px 28px;
+      padding: 12px 24px;
       font-size: 1rem;
-      border: 2px solid black;
       border-radius: 30px;
-      background-color: white;
+      background-color: black;
+      color: white;
+      border: none;
       cursor: pointer;
     }
 
-    .convert-btn:hover {
-      background-color: black;
-      color: white;
+    .output-wrapper {
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+      margin-top: 3rem;
+      width: 100%;
+      max-width: 1200px;
     }
 
-    .preview {
-      margin-top: 20px;
+    .output {
+      flex: 1;
+      text-align: center;
     }
 
-    .error {
-      color: red;
+    .jeongganbo-container {
+      max-width: 600px;
+      margin: 0 auto;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .jeongganbo-grid-page {
+      display: none;
+    }
+
+    .jeongganbo-grid-page.active {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, 40px);
+      grid-template-rows: repeat(18, 40px);
+      gap: 4px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      background: #fff;
+      border-radius: 10px;
+      justify-content: start;
+    }
+
+    .pagination-buttons {
       margin-top: 10px;
     }
 
+    .pagination-buttons button, .action-buttons button {
+      padding: 6px 12px;
+      margin: 4px;
+      font-size: 0.9rem;
+      border-radius: 4px;
+      border: 1px solid #aaa;
+      cursor: pointer;
+    }
+
+    .action-buttons {
+      margin-top: 16px;
+    }
+
+    .cell {
+      width: 40px;
+      height: 40px;
+      border: 1px solid #aaa;
+      background-color: #fafafa;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 1.2rem;
+      font-family: 'Noto Serif KR', serif;
+    }
+
+    .sheet-image {
+      width: 100%;
+      max-width: 600px;
+      margin-top: 20px;
+      border: 1px solid #ccc;
+      border-radius: 12px;
+    }
   </style>
 </head>
 <body>
-
-  <h1>Gugak Reader</h1>
-  <p>Convert Jeong-ganbo into Western sheet music.</p>
-
-  <form method="POST" enctype="multipart/form-data">
-    <div class="upload-box">
-      <label class="file-label">
-        📄 Upload Jeong-ganbo
-        <input type="file" name="file" accept=".txt">
-      </label>
-    </div>
-
-    <button class="convert-btn" type="submit">Convert →</button>
-  </form>
-
-  {% if image_path %}
-    <div class="preview">
-      <h3>Generated Western Sheet:</h3>
-      <img src="/static/{{ image_path }}" alt="Western Score" width="300">
-    </div>
-  {% endif %}
-
-  {% if error %}
-    <div class="error">{{ error }}</div>
-  {% endif %}
-
-{% if jeongganbo_text %}
-  <div class="preview">
-    <h4>Detected Notes:</h4>
-    <p>{{ jeongganbo_text }}</p>
+  <div class="sidebar">
+    <h2>Gen-Gugak</h2>
+    <a href="/welcome">Home</a>
+    <a href="/select">Library</a>
+    <a href="/upload_jeongganbo_text">Gugak Reader</a>
+    <a href="/about">About</a>
   </div>
-{% endif %}
 
+  <div class="main">
+    <h1>Gugak Reader</h1>
+    <p>Convert Jeong-ganbo into Western sheet music.</p>
+
+    <form class="upload-box" method="POST" enctype="multipart/form-data" id="upload-form">
+      <label for="file" class="upload-label">📄 Upload Jeong-ganbo</label>
+      <input type="file" name="file" id="file" accept=".txt">
+      <div class="file-name" id="file-name"></div>
+      <div style="margin-top: 2rem;">
+        <button class="convert-btn" type="submit">Convert →</button>
+      </div>
+    </form>
+
+    {% if jeongganbo_text or image_path %}
+      <div class="output-wrapper">
+        {% if jeongganbo_text %}
+          <div class="output">
+            <h3>Jeong-ganbo</h3>
+            <div class="jeongganbo-container">
+              {% set page_size = 108 %}
+              {% set rows_per_column = 18 %}
+              {% set num_pages = (jeongganbo_text|length // page_size) + (1 if jeongganbo_text|length % page_size > 0 else 0) %}
+              {% for page in range(num_pages) %}
+              <div class="jeongganbo-grid-page {% if loop.first %}active{% endif %}" id="page-{{ page }}">
+                {% for i in range(page * page_size, (page + 1) * page_size, rows_per_column) %}
+                  {% for r in range(rows_per_column) %}
+                    {% if i + r < jeongganbo_text|length %}
+                      <div class="cell">{{ jeongganbo_text[i + r] }}</div>
+                    {% else %}
+                      <div class="cell"></div>
+                    {% endif %}
+                  {% endfor %}
+                {% endfor %}
+              </div>
+              {% endfor %}
+              <div class="pagination-buttons">
+                <button onclick="prevPage()">← Prev</button>
+                <button onclick="nextPage()">Next →</button>
+              </div>
+              <div class="action-buttons">
+                <a href="/static/output/western_from_jeongganbo.mid" download><button>🎵 Download MIDI</button></a>
+                <audio controls style="margin-top: 10px;">
+                  <source src="/static/output/western_from_jeongganbo.mp3" type="audio/mp3">
+                </audio>
+              </div>
+            </div>
+          </div>
+        {% endif %}
+
+        {% if image_path %}
+          <div class="output">
+            <h3>Western Sheet Music</h3>
+            <img src="/static/{{ image_path }}" class="sheet-image" alt="Western Sheet Music">
+          </div>
+        {% endif %}
+      </div>
+    {% endif %}
+
+    {% if error %}
+      <p style="color: red; margin-top: 2rem;">{{ error }}</p>
+    {% endif %}
+  </div>
+
+  <script>
+    const fileInput = document.getElementById('file');
+    const label = document.querySelector('.upload-label');
+    const fileName = document.getElementById('file-name');
+    const form = document.getElementById('upload-form');
+
+    label.addEventListener('click', () => fileInput.click());
+
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files.length > 0) {
+        fileName.textContent = fileInput.files[0].name;
+        form.submit();
+      } else {
+        fileName.textContent = '';
+      }
+    });
+
+    let currentPage = 0;
+    const pages = document.querySelectorAll('.jeongganbo-grid-page');
+
+    function showPage(index) {
+      pages.forEach((page, i) => {
+        page.classList.toggle('active', i === index);
+      });
+    }
+
+    function nextPage() {
+      if (currentPage < pages.length - 1) {
+        currentPage++;
+        showPage(currentPage);
+      }
+    }
+
+    function prevPage() {
+      if (currentPage > 0) {
+        currentPage--;
+        showPage(currentPage);
+      }
+    }
+  </script>
 </body>
 </html>
